@@ -43,6 +43,7 @@ import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
 import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.binding.BaseBridgeHandler;
+import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
 import org.slf4j.Logger;
@@ -154,6 +155,22 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
         super.handleConfigurationUpdate(configurationParameters);
         dispose();
         initialize();
+    }
+
+    @Override
+    public void childHandlerInitialized(ThingHandler childHandler, Thing childThing) {
+        if (childHandler instanceof SmilesCloudStationHandler stationHandler) {
+            String stationId = (String) childThing.getConfiguration().get("stationId");
+            if (stationId != null) {
+                logger.debug("Station thing {} adopted, fetching data immediately", stationId);
+                SmilesCloudApiClient api = apiClient;
+                SmilesCloudAuthService auth = authService;
+                SmilesCloudAccountConfig config = getConfigAs(SmilesCloudAccountConfig.class);
+                if (api != null && auth != null) {
+                    scheduler.execute(() -> pollStation(api, stationId, auth, config));
+                }
+            }
+        }
     }
 
     public Map<String, String> getDiscoveredStations() {
