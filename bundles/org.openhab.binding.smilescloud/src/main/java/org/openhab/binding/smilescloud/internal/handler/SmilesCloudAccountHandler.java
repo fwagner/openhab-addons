@@ -104,6 +104,7 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
             return;
         }
 
+        logger.debug("Initializing S-Miles Cloud account bridge for user {}", config.username);
         updateStatus(ThingStatus.UNKNOWN);
 
         var httpClient = httpClientFactory.getCommonHttpClient();
@@ -116,6 +117,7 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
         this.storage = s;
         restoreAuthState(auth, s);
 
+        logger.debug("Starting poll scheduler with interval {}s", config.pollingInterval);
         pollingJob = scheduler.scheduleWithFixedDelay(this::poll, 0, config.pollingInterval, TimeUnit.SECONDS);
     }
 
@@ -166,19 +168,24 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
     // --- Polling ---
 
     private void poll() {
+        logger.debug("Poll cycle starting");
         SmilesCloudAuthService auth = authService;
         SmilesCloudApiClient api = apiClient;
         if (auth == null || api == null) {
+            logger.debug("Auth or API client not initialized, skipping poll");
             return;
         }
 
         SmilesCloudAccountConfig config = getConfigAs(SmilesCloudAccountConfig.class);
 
         try {
+            logger.debug("Ensuring authentication for {}", config.username);
             auth.ensureAuthenticated(config.baseUrl, config.username, config.password);
+            logger.debug("Authentication OK, token valid={}, profile={}", auth.isTokenValid(), auth.getProfile());
             persistAuthState(auth);
         } catch (SmilesCloudAuthenticationException e) {
             String msg = e.getMessage();
+            logger.warn("Authentication failed: {}", msg, e);
             if (msg != null && (msg.contains("Password expired") || msg.contains("invalid credentials")
                     || msg.contains("check your account"))) {
                 updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.CONFIGURATION_ERROR, msg);
