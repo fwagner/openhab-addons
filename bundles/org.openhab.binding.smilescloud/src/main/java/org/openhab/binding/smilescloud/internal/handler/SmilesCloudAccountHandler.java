@@ -197,13 +197,15 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
         }
 
         try {
+            logger.debug("Fetching station list...");
             Map<String, String> stations = api.getStationList();
+            logger.debug("Station list returned {} station(s): {}", stations.size(), stations);
             discoveredStations.clear();
             discoveredStations.putAll(stations);
 
             if (stations.isEmpty()) {
                 updateStatus(ThingStatus.ONLINE);
-                logger.debug("No stations found for this account");
+                logger.info("No stations found for this account");
                 return;
             }
 

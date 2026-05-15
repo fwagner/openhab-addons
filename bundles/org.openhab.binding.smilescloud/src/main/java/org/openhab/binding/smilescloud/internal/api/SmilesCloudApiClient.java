@@ -65,8 +65,11 @@ public class SmilesCloudApiClient {
     }
 
     private String getDataHost() {
-        return "home".equals(authService.getProfile()) ? DEFAULT_BASE_URL
-                : (authService.getRegionHost() != null ? authService.getRegionHost() : baseUrl);
+        String profile = authService.getProfile();
+        String regionHost = authService.getRegionHost();
+        String host = "home".equals(profile) ? DEFAULT_BASE_URL : (regionHost != null ? regionHost : baseUrl);
+        logger.debug("Data host: {} (profile={})", host, profile);
+        return host;
     }
 
     /**
@@ -232,8 +235,12 @@ public class SmilesCloudApiClient {
             throw new SmilesCloudApiException("Not authenticated");
         }
         try {
-            return postJson(url, body, token);
+            logger.debug("API POST {}", url);
+            String response = postJson(url, body, token);
+            logger.trace("API response: {}", response);
+            return response;
         } catch (Exception e) {
+            logger.debug("API POST {} failed: {}", url, e.getMessage());
             throw new SmilesCloudApiException("API request failed: " + e.getMessage(), e);
         }
     }
