@@ -33,8 +33,6 @@ import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
-import org.openhab.binding.smilescloud.internal.api.dto.AuthLoginResponse;
-import org.openhab.binding.smilescloud.internal.api.dto.AuthPreInspectResponse;
 import org.openhab.binding.smilescloud.internal.api.dto.AuthPreInspectResponse.AuthPreInspectData;
 import org.openhab.binding.smilescloud.internal.api.dto.RegionResponse;
 import org.openhab.binding.smilescloud.internal.exception.SmilesCloudAuthenticationException;
@@ -43,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 /**
  * Authentication service for the Hoymiles S-Miles Cloud.
@@ -286,15 +285,25 @@ public class SmilesCloudAuthService {
             JsonObject body = new JsonObject();
             body.addProperty("u", username);
             String response = postJson(host + API_PRE_INSPECT_PATH, body, null);
-            AuthPreInspectResponse result = gson.fromJson(response, AuthPreInspectResponse.class);
-            if (result == null || !result.isSuccess() || result.data == null) {
-                String msg = result != null ? result.message : "null response";
-                throw new SmilesCloudAuthenticationException("Pre-inspect failed: " + msg);
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+            String status = getJsonString(json, "status");
+            String message = getJsonString(json, "message");
+            if (!"0".equals(status)) {
+                throw new SmilesCloudAuthenticationException("Pre-inspect failed (status=" + status + "): " + message);
             }
-            AuthPreInspectData data = result.data;
-            if (data == null) {
-                throw new SmilesCloudAuthenticationException("Pre-inspect returned no data");
+
+            if (!json.has("data") || !json.get("data").isJsonObject()) {
+                throw new SmilesCloudAuthenticationException("Pre-inspect returned no data object");
             }
+            JsonObject dataObj = json.getAsJsonObject("data");
+            AuthPreInspectData data = new AuthPreInspectData();
+            data.n = getJsonString(dataObj, "n");
+            data.a = getJsonString(dataObj, "a");
+            data.v = dataObj.has("v") && !dataObj.get("v").isJsonNull() ? dataObj.get("v").getAsInt() : null;
+            data.dc = dataObj.has("dc") && !dataObj.get("dc").isJsonNull() ? dataObj.get("dc").getAsInt() : null;
+            data.f = dataObj.has("f") && !dataObj.get("f").isJsonNull() ? dataObj.get("f").getAsInt() : null;
+            logger.debug("Pre-inspect: v={}, saltPresent={}, dc={}, f={}", data.v, data.a != null, data.dc, data.f);
             return data;
         } catch (SmilesCloudAuthenticationException e) {
             throw e;
@@ -315,16 +324,19 @@ public class SmilesCloudAuthService {
             body.addProperty("ch", ch);
             body.addProperty("n", nonce);
             String response = postJson(host + API_LOGIN_V3_PATH, body, null);
-            AuthLoginResponse result = gson.fromJson(response, AuthLoginResponse.class);
-            if (result == null || !result.isSuccess()) {
-                String msg = result != null ? result.message : "null response";
-                throw new SmilesCloudAuthenticationException("Login failed: " + msg);
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
+
+            String status = getJsonString(json, "status");
+            String message = getJsonString(json, "message");
+            if (!"0".equals(status)) {
+                throw new SmilesCloudAuthenticationException("Login failed (status=" + status + "): " + message);
             }
-            AuthLoginResponse.AuthLoginData loginData = result.data;
-            if (loginData == null) {
-                throw new SmilesCloudAuthenticationException("Login succeeded but no data returned");
+
+            if (!json.has("data") || !json.get("data").isJsonObject()) {
+                throw new SmilesCloudAuthenticationException("Login succeeded but no data object returned");
             }
-            String token = loginData.token;
+            JsonObject dataObj = json.getAsJsonObject("data");
+            String token = getJsonString(dataObj, "token");
             if (token == null || token.isEmpty()) {
                 throw new SmilesCloudAuthenticationException("Login succeeded but no token returned");
             }
@@ -334,6 +346,13 @@ public class SmilesCloudAuthService {
         } catch (Exception e) {
             throw new SmilesCloudAuthenticationException("Login request failed", e);
         }
+    }
+
+    private static @Nullable String getJsonString(JsonObject obj, String key) {
+        if (!obj.has(key) || obj.get(key).isJsonNull()) {
+            return null;
+        }
+        return obj.get(key).getAsString();
     }
 
     // --- Profile probe ---
@@ -396,25 +415,28 @@ public class SmilesCloudAuthService {
 
     // --- HTTP helper ---
 
-    private static final String USER_AGENT_WEB = "openHAB-SmilesCloud";
+    private static final String APP_VERSION = "2.9.0";
+    private static final int APP_TID = 159;
 
     private String getUserAgent() {
         Integer dc = dataCenterMarker;
-        return "sma/ad/2.9.0/159/" + (dc != null ? dc : 0);
+        return "sma/ad/" + APP_VERSION + "/" + APP_TID + "/" + (dc != null ? dc : 0);
     }
 
     private String postJson(String url, JsonObject body, @Nullable String token)
             throws InterruptedException, TimeoutException, ExecutionException {
+        String userAgent = getUserAgent();
         var request = httpClient.newRequest(url).method(HttpMethod.POST).header("Content-Type", "application/json")
-                .header("Accept", "application/json").header("User-Agent", getUserAgent())
-                .timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .header("Accept", "application/json").header("User-Agent", userAgent).header("App-Version", APP_VERSION)
+                .header("X-App-Version", APP_VERSION).timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body)));
         if (token != null) {
             request.header("Authorization", token);
         }
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();
-        logger.trace("POST {} → {} {}", url, response.getStatus(), responseBody);
+        logger.debug("POST {} → HTTP {} (UA: {})", url, response.getStatus(), userAgent);
+        logger.trace("Response body: {}", responseBody);
         return responseBody;
     }
 }

@@ -238,16 +238,19 @@ public class SmilesCloudApiClient {
         }
     }
 
+    private static final String APP_VERSION = "2.9.0";
+
     private String getUserAgent() {
         Integer dc = authService.getDataCenterMarker();
-        return "sma/ad/2.9.0/159/" + (dc != null ? dc : 0);
+        return "sma/ad/" + APP_VERSION + "/159/" + (dc != null ? dc : 0);
     }
 
     private String postJson(String url, JsonObject body, String token)
             throws InterruptedException, TimeoutException, ExecutionException {
         ContentResponse response = httpClient.newRequest(url).method(HttpMethod.POST)
                 .header("Content-Type", "application/json").header("Accept", "application/json")
-                .header("User-Agent", getUserAgent()).header("Authorization", token)
+                .header("User-Agent", getUserAgent()).header("App-Version", APP_VERSION)
+                .header("X-App-Version", APP_VERSION).header("Authorization", token)
                 .timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body))).send();
         return response.getContentAsString();
