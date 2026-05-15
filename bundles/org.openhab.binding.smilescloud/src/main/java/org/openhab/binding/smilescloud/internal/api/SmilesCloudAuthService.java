@@ -299,7 +299,9 @@ public class SmilesCloudAuthService {
         } catch (SmilesCloudAuthenticationException e) {
             throw e;
         } catch (Exception e) {
-            throw new SmilesCloudAuthenticationException("Pre-inspect request failed", e);
+            logger.debug("Pre-inspect request to {} failed: {}", host, e.getMessage(), e);
+            throw new SmilesCloudAuthenticationException(
+                    "Pre-inspect request failed: " + e.getClass().getSimpleName() + ": " + e.getMessage(), e);
         }
     }
 
@@ -394,15 +396,25 @@ public class SmilesCloudAuthService {
 
     // --- HTTP helper ---
 
+    private static final String USER_AGENT_WEB = "openHAB-SmilesCloud";
+
+    private String getUserAgent() {
+        Integer dc = dataCenterMarker;
+        return "sma/ad/2.9.0/159/" + (dc != null ? dc : 0);
+    }
+
     private String postJson(String url, JsonObject body, @Nullable String token)
             throws InterruptedException, TimeoutException, ExecutionException {
         var request = httpClient.newRequest(url).method(HttpMethod.POST).header("Content-Type", "application/json")
-                .header("Accept", "application/json").timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+                .header("Accept", "application/json").header("User-Agent", getUserAgent())
+                .timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body)));
         if (token != null) {
             request.header("Authorization", token);
         }
         ContentResponse response = request.send();
-        return response.getContentAsString();
+        String responseBody = response.getContentAsString();
+        logger.trace("POST {} → {} {}", url, response.getStatus(), responseBody);
+        return responseBody;
     }
 }
