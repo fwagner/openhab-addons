@@ -47,6 +47,9 @@ public class SmilesCloudStationDiscoveryService
     @Override
     protected void startScan() {
         SmilesCloudAccountHandler bridge = getThingHandler();
+        if (bridge == null) {
+            return;
+        }
         Map<String, String> stations = bridge.getDiscoveredStations();
         ThingUID bridgeUID = bridge.getThing().getUID();
 

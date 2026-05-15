@@ -120,10 +120,10 @@
 
 	<!-- Other channels -->
 	<channel-type id="co2Reduction">
-		<item-type>Number:Mass</item-type>
+		<item-type>Number</item-type>
 		<label>CO2 Reduction</label>
-		<description>Total CO2 emissions reduction from solar production.</description>
-		<state readOnly="true" pattern="%.0f %unit%"/>
+		<description>Total CO2 emissions reduction from solar production in grams.</description>
+		<state readOnly="true" pattern="%.0f g"/>
 	</channel-type>
 
 	<channel-type id="batterySoc">

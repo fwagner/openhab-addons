@@ -19,6 +19,7 @@ import org.eclipse.jdt.annotation.Nullable;
 import org.openhab.binding.smilescloud.internal.handler.SmilesCloudAccountHandler;
 import org.openhab.binding.smilescloud.internal.handler.SmilesCloudStationHandler;
 import org.openhab.core.io.net.http.HttpClientFactory;
+import org.openhab.core.storage.StorageService;
 import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
@@ -39,10 +40,13 @@ import org.osgi.service.component.annotations.Reference;
 public class SmilesCloudHandlerFactory extends BaseThingHandlerFactory {
 
     private final HttpClientFactory httpClientFactory;
+    private final StorageService storageService;
 
     @Activate
-    public SmilesCloudHandlerFactory(@Reference HttpClientFactory httpClientFactory) {
+    public SmilesCloudHandlerFactory(@Reference HttpClientFactory httpClientFactory,
+            @Reference StorageService storageService) {
         this.httpClientFactory = httpClientFactory;
+        this.storageService = storageService;
     }
 
     @Override
@@ -55,7 +59,7 @@ public class SmilesCloudHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (THING_TYPE_ACCOUNT.equals(thingTypeUID)) {
-            return new SmilesCloudAccountHandler((Bridge) thing, httpClientFactory);
+            return new SmilesCloudAccountHandler((Bridge) thing, httpClientFactory, storageService);
         }
         if (THING_TYPE_STATION.equals(thingTypeUID)) {
             return new SmilesCloudStationHandler(thing);
