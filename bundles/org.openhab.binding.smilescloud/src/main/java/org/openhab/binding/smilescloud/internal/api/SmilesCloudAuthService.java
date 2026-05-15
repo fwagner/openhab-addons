@@ -358,18 +358,23 @@ public class SmilesCloudAuthService {
     // --- Profile probe ---
 
     private String probeProfile(String host, String token) {
+        logger.debug("Probing account profile via {}{}", host, API_PROFILE_PROBE_PATH);
         try {
             JsonObject body = new JsonObject();
             body.addProperty("page", 1);
             body.addProperty("page_size", 1);
             String response = postJson(host + API_PROFILE_PROBE_PATH, body, token);
             JsonObject result = gson.fromJson(response, JsonObject.class);
-            if (result != null && "0".equals(result.has("status") ? result.get("status").getAsString() : null)) {
+            if (result != null && "0".equals(getJsonString(result, "status"))) {
+                logger.debug("Profile probe accepted → installer profile");
                 return "installer";
             }
+            logger.debug("Profile probe rejected (status={}) → home profile",
+                    result != null ? getJsonString(result, "status") : "non-JSON");
         } catch (Exception e) {
-            logger.debug("Profile probe rejected (expected for home accounts): {}", e.getMessage());
+            logger.debug("Profile probe failed (expected for home accounts): {}", e.getMessage());
         }
+        logger.info("Detected S-Miles Home account profile — using _c API endpoints");
         return "home";
     }
 
