@@ -248,9 +248,8 @@ public class SmilesCloudApiClient {
     private String postJson(String url, JsonObject body, String token)
             throws InterruptedException, TimeoutException, ExecutionException {
         ContentResponse response = httpClient.newRequest(url).method(HttpMethod.POST)
-                .header("Content-Type", "application/json").header("Accept", "application/json")
-                .header("User-Agent", getUserAgent()).header("App-Version", APP_VERSION)
-                .header("X-App-Version", APP_VERSION).header("Authorization", token)
+                .header("Content-Type", "application/json").header("Accept", "application/json").agent(getUserAgent())
+                .header("App-Version", APP_VERSION).header("X-App-Version", APP_VERSION).header("Authorization", token)
                 .timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body))).send();
         return response.getContentAsString();

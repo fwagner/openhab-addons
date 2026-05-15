@@ -427,7 +427,7 @@ public class SmilesCloudAuthService {
             throws InterruptedException, TimeoutException, ExecutionException {
         String userAgent = getUserAgent();
         var request = httpClient.newRequest(url).method(HttpMethod.POST).header("Content-Type", "application/json")
-                .header("Accept", "application/json").header("User-Agent", userAgent).header("App-Version", APP_VERSION)
+                .header("Accept", "application/json").agent(userAgent).header("App-Version", APP_VERSION)
                 .header("X-App-Version", APP_VERSION).timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body)));
         if (token != null) {
