@@ -34,7 +34,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.openhab.binding.smilescloud.internal.api.dto.AuthPreInspectResponse.AuthPreInspectData;
-import org.openhab.binding.smilescloud.internal.api.dto.RegionResponse;
 import org.openhab.binding.smilescloud.internal.exception.SmilesCloudAuthenticationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -173,15 +172,17 @@ public class SmilesCloudAuthService {
             JsonObject body = new JsonObject();
             body.addProperty("email", username);
             String response = postJson(baseUrl + API_REGION_PATH, body, null);
-            RegionResponse region = gson.fromJson(response, RegionResponse.class);
+            JsonObject json = JsonParser.parseString(response).getAsJsonObject();
 
-            if (region != null && region.isSuccess() && region.data != null) {
-                RegionResponse.RegionData data = region.data;
-                dataCenterMarker = data.dc;
-                String loginUrl = data.loginUrl;
+            if ("0".equals(getJsonString(json, "status")) && json.has("data") && json.get("data").isJsonObject()) {
+                JsonObject data = json.getAsJsonObject("data");
+                if (data.has("dc") && !data.get("dc").isJsonNull()) {
+                    dataCenterMarker = data.get("dc").getAsInt();
+                }
+                String loginUrl = getJsonString(data, "login_url");
                 if (loginUrl != null && !loginUrl.isEmpty() && loginUrl.startsWith("https://")) {
                     regionHost = loginUrl;
-                    logger.debug("Region discovery: host={}, dc={}", loginUrl, data.dc);
+                    logger.debug("Region discovery: host={}, dc={}", loginUrl, dataCenterMarker);
                     return loginUrl;
                 }
             }

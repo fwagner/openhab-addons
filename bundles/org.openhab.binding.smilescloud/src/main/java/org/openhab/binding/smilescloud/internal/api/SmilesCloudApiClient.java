@@ -29,7 +29,6 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpMethod;
 import org.openhab.binding.smilescloud.internal.api.dto.PvIndicatorsData;
-import org.openhab.binding.smilescloud.internal.api.dto.StationListResponse;
 import org.openhab.binding.smilescloud.internal.api.dto.StationRealTimeData;
 import org.openhab.binding.smilescloud.internal.exception.SmilesCloudApiException;
 import org.slf4j.Logger;
@@ -87,36 +86,52 @@ public class SmilesCloudApiClient {
             body.addProperty("page_size", pageSize);
 
             String response = authenticatedPost(getDataHost() + API_STATION_LIST_PATH, body);
-            StationListResponse result = gson.fromJson(response, StationListResponse.class);
-            if (result == null || !result.isSuccess() || result.data == null) {
+            JsonObject json = safeParseJson(response, "station list");
+            String status = getJsonString(json, "status");
+            if (!"0".equals(status)) {
                 throw new SmilesCloudApiException(
-                        "Failed to get stations: " + (result != null ? result.message : "null"));
+                        "Failed to get stations (status=" + status + "): " + getJsonString(json, "message"));
             }
 
-            StationListResponse.StationListData data = result.data;
-            if (data == null) {
+            if (!json.has("data") || !json.get("data").isJsonObject()) {
+                logger.debug("Station list: data field is not an object, breaking");
                 break;
             }
-            List<StationListResponse.StationEntry> list = data.list;
-            if (total == null) {
-                total = data.total;
+            JsonObject dataObj = json.getAsJsonObject("data");
+            if (total == null && dataObj.has("total") && !dataObj.get("total").isJsonNull()) {
+                total = dataObj.get("total").getAsInt();
             }
 
-            if (list == null || list.isEmpty()) {
+            if (!dataObj.has("list") || !dataObj.get("list").isJsonArray()) {
+                break;
+            }
+            var listArray = dataObj.getAsJsonArray("list");
+            if (listArray.isEmpty()) {
                 break;
             }
 
-            for (StationListResponse.StationEntry entry : list) {
-                int id = entry.getStationId();
+            for (var element : listArray) {
+                if (!element.isJsonObject()) {
+                    continue;
+                }
+                JsonObject entry = element.getAsJsonObject();
+                int id = 0;
+                if (entry.has("sid") && !entry.get("sid").isJsonNull()) {
+                    id = entry.get("sid").getAsInt();
+                } else if (entry.has("id") && !entry.get("id").isJsonNull()) {
+                    id = entry.get("id").getAsInt();
+                }
                 if (id > 0) {
-                    stations.put(String.valueOf(id), entry.getStationName());
+                    String name = entry.has("name") && !entry.get("name").isJsonNull() ? entry.get("name").getAsString()
+                            : "Station " + id;
+                    stations.put(String.valueOf(id), name);
                 }
             }
 
             if (total != null && stations.size() >= total) {
                 break;
             }
-            if (list.size() < pageSize) {
+            if (listArray.size() < pageSize) {
                 break;
             }
             pageNum++;
@@ -132,15 +147,14 @@ public class SmilesCloudApiClient {
         body.addProperty("sid", Integer.parseInt(stationId));
 
         String response = authenticatedPost(getDataHost() + API_REALTIME_DATA_PATH, body);
-        JsonObject parsed = JsonParser.parseString(response).getAsJsonObject();
+        JsonObject parsed = safeParseJson(response, "realtime data");
         if (!"0".equals(getJsonString(parsed, "status"))) {
             throw new SmilesCloudApiException("Failed to get realtime data: " + getJsonString(parsed, "message"));
         }
-        JsonObject dataObj = parsed.has("data") ? parsed.getAsJsonObject("data") : null;
-        if (dataObj == null) {
+        if (!parsed.has("data") || !parsed.get("data").isJsonObject()) {
             return null;
         }
-        return gson.fromJson(dataObj, StationRealTimeData.class);
+        return gson.fromJson(parsed.getAsJsonObject("data"), StationRealTimeData.class);
     }
 
     /**
@@ -152,15 +166,14 @@ public class SmilesCloudApiClient {
         body.addProperty("type", 4);
 
         String response = authenticatedPost(getDataHost() + API_PV_INDICATORS_PATH, body);
-        JsonObject parsed = JsonParser.parseString(response).getAsJsonObject();
+        JsonObject parsed = safeParseJson(response, "PV indicators");
         if (!"0".equals(getJsonString(parsed, "status"))) {
             throw new SmilesCloudApiException("Failed to get PV indicators: " + getJsonString(parsed, "message"));
         }
-        JsonObject dataObj = parsed.has("data") ? parsed.getAsJsonObject("data") : null;
-        if (dataObj == null) {
+        if (!parsed.has("data") || !parsed.get("data").isJsonObject()) {
             return null;
         }
-        return gson.fromJson(dataObj, PvIndicatorsData.class);
+        return gson.fromJson(parsed.getAsJsonObject("data"), PvIndicatorsData.class);
     }
 
     /**
@@ -179,7 +192,7 @@ public class SmilesCloudApiClient {
         body.add("data", dataInner);
 
         String response = authenticatedPost(getDataHost() + API_POWER_LIMIT_PATH, body);
-        JsonObject parsed = JsonParser.parseString(response).getAsJsonObject();
+        JsonObject parsed = safeParseJson(response, "power limit");
         if (!"0".equals(getJsonString(parsed, "status"))) {
             throw new SmilesCloudApiException("Failed to set power limit: " + getJsonString(parsed, "message"));
         }
@@ -260,6 +273,20 @@ public class SmilesCloudApiClient {
                 .timeout(HTTP_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS)
                 .content(new StringContentProvider(gson.toJson(body))).send();
         return response.getContentAsString();
+    }
+
+    private JsonObject safeParseJson(String response, String label) throws SmilesCloudApiException {
+        try {
+            var element = JsonParser.parseString(response);
+            if (!element.isJsonObject()) {
+                throw new SmilesCloudApiException(
+                        label + ": expected JSON object but got " + element.getClass().getSimpleName());
+            }
+            return element.getAsJsonObject();
+        } catch (com.google.gson.JsonSyntaxException e) {
+            String preview = response.length() > 200 ? response.substring(0, 200) + "..." : response;
+            throw new SmilesCloudApiException(label + ": invalid JSON response: " + preview, e);
+        }
     }
 
     private static @Nullable String getJsonString(JsonObject obj, String key) {
