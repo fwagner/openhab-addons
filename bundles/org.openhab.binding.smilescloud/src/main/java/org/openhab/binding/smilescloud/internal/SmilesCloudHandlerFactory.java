@@ -14,28 +14,36 @@ package org.openhab.binding.smilescloud.internal;
 
 import static org.openhab.binding.smilescloud.internal.SmilesCloudBindingConstants.*;
 
-import java.util.Set;
-
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
+import org.openhab.binding.smilescloud.internal.handler.SmilesCloudAccountHandler;
+import org.openhab.binding.smilescloud.internal.handler.SmilesCloudStationHandler;
+import org.openhab.core.io.net.http.HttpClientFactory;
+import org.openhab.core.thing.Bridge;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingTypeUID;
 import org.openhab.core.thing.binding.BaseThingHandlerFactory;
 import org.openhab.core.thing.binding.ThingHandler;
 import org.openhab.core.thing.binding.ThingHandlerFactory;
+import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
+import org.osgi.service.component.annotations.Reference;
 
 /**
- * The {@link SmilesCloudHandlerFactory} is responsible for creating things and thing
- * handlers.
+ * The {@link SmilesCloudHandlerFactory} creates handlers for S-Miles Cloud bridges and things.
  *
- * @author openHAB Cloud Agent - Initial contribution
+ * @author Florian Wagner - Initial contribution
  */
 @NonNullByDefault
 @Component(configurationPid = "binding.smilescloud", service = ThingHandlerFactory.class)
 public class SmilesCloudHandlerFactory extends BaseThingHandlerFactory {
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Set.of(THING_TYPE_SAMPLE);
+    private final HttpClientFactory httpClientFactory;
+
+    @Activate
+    public SmilesCloudHandlerFactory(@Reference HttpClientFactory httpClientFactory) {
+        this.httpClientFactory = httpClientFactory;
+    }
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
@@ -46,8 +54,11 @@ public class SmilesCloudHandlerFactory extends BaseThingHandlerFactory {
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
-        if (THING_TYPE_SAMPLE.equals(thingTypeUID)) {
-            return new SmilesCloudHandler(thing);
+        if (THING_TYPE_ACCOUNT.equals(thingTypeUID)) {
+            return new SmilesCloudAccountHandler((Bridge) thing, httpClientFactory);
+        }
+        if (THING_TYPE_STATION.equals(thingTypeUID)) {
+            return new SmilesCloudStationHandler(thing);
         }
 
         return null;

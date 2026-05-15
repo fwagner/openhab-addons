@@ -10,22 +10,17 @@
  *
  * SPDX-License-Identifier: EPL-2.0
  */
-package org.openhab.binding.smilescloud.internal;
+package org.openhab.binding.smilescloud.internal.config;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 
 /**
- * The {@link SmilesCloudConfiguration} class contains fields mapping thing configuration parameters.
+ * Configuration for a S-Miles Cloud station thing.
  *
- * @author openHAB Cloud Agent - Initial contribution
+ * @author Florian Wagner - Initial contribution
  */
 @NonNullByDefault
-public class SmilesCloudConfiguration {
+public class SmilesCloudStationConfig {
 
-    /**
-     * Sample configuration parameters. Replace with your own.
-     */
-    public String hostname = "";
-    public String password = "";
-    public int refreshInterval = 600;
+    public String stationId = "";
 }

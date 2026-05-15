@@ -12,7 +12,7 @@ Phase 1 targets **Home profile** accounts only (S-Miles Home app users) using th
 
 ## Architecture
 
-```
+```text
 Bridge: SmilesCloudAccount
   ├── config: username, password, pollingInterval (baseUrl advanced)
   ├── handles: region discovery, authentication (v3 Argon2 + unsalted fallbacks),
@@ -31,10 +31,10 @@ Thing: SmilesCloudStation
 ### Data Flow
 
 1. Bridge poll fires on `pollingInterval` schedule
-2. Bridge calls `getStationRealtime(sid)` and `getPvIndicators(sid)` for each registered station
-3. Bridge stores results in `ConcurrentHashMap<String, StationData>`
-4. Bridge iterates child station handlers and calls `handler.updateData(dto)`
-5. Station handler updates channel states from the DTO
+1. Bridge calls `getStationRealtime(sid)` and `getPvIndicators(sid)` for each registered station
+1. Bridge stores results in `ConcurrentHashMap<String, StationData>`
+1. Bridge iterates child station handlers and calls `handler.updateData(dto)`
+1. Station handler updates channel states from the DTO
 
 Station handlers never call HTTP directly — all API access goes through the bridge.
 
@@ -196,27 +196,27 @@ PV channel count is discovered from the key prefixes (`{N}_pv_{v|i|p}`). No hard
 
 ### Flow
 
-```
+```text
 1. POST /iam/pub/0/c/region_c {email}
    → discover regional host + dc marker (non-fatal on failure, fall back to default)
 
-2. POST /iam/pub/3/auth/pre-insp {u: email}
+1. POST /iam/pub/3/auth/pre-insp {u: email}
    → {n: nonce, a: salt_or_null, v, dc, f, t}
 
-3. Compute credential challenge:
+1. Compute credential challenge:
    a. If a != null (salt present) → Argon2id(password, hex_decode(salt), t=3, m=32768, p=1, hashLen=32).hex()
    b. If a == null → try unsalted variants in order:
       i.  sha256_v3: md5(password).hex() + "." + base64(sha256(password))
       ii. sha256_hex_v3: sha256(password).hex()
       (each variant needs a fresh pre-insp call for a new nonce)
 
-4. POST /iam/pub/3/auth/login {u: email, ch: credential_hash, n: nonce}
+1. POST /iam/pub/3/auth/login {u: email, ch: credential_hash, n: nonce}
    → {data: {token: "..."}}
 
-5. POST /pvm/api/0/station/select_by_page {page:1, page_size:1}
+1. POST /pvm/api/0/station/select_by_page {page:1, page_size:1}
    → if status=0: profile=installer; else: profile=home
 
-6. Store token + auth method + profile in StorageService
+1. Store token + auth method + profile in StorageService
 ```
 
 ### Client Profiles (Phase 1: Web + Home only)
@@ -321,7 +321,7 @@ The ~1.2s computation happens only at login (every ~1 hour), not per polling cyc
 
 ### Cross-language verification
 
-```
+```text
 Password: testpassword123
 Salt: d5e3f019748d7a36d69840fdfd873d15
 Java (Bouncy Castle): 3c5d1ece590f242aa94b901f3940ebfd89b7bd0fdd21132a69e4321d6436a409
@@ -444,6 +444,7 @@ API field `data_time` is a **naive local datetime** string: `"2026-05-15 14:30:0
 The station's timezone is available from station details (`timezone.tz_name`, `timezone.offset`).
 
 Parsing:
+
 ```java
 LocalDateTime naive = LocalDateTime.parse(dataTime, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 ZonedDateTime zoned = naive.atZone(stationTimeZone); // or system default if unknown
@@ -546,10 +547,10 @@ public class SmilesCloudAccountConfig {
 ### Validation in `initialize()`
 
 1. `username` must be non-blank
-2. `password` must be non-blank
-3. `baseUrl` must start with `https://`
-4. `pollingInterval` must be >= 60
-5. Failures → `OFFLINE` + `CONFIGURATION_ERROR` with message
+1. `password` must be non-blank
+1. `baseUrl` must start with `https://`
+1. `pollingInterval` must be >= 60
+1. Failures → `OFFLINE` + `CONFIGURATION_ERROR` with message
 
 ### Runtime Config Changes
 
@@ -640,7 +641,7 @@ Background discovery runs after each successful station list fetch (in the poll 
 
 ## Project Structure
 
-```
+```text
 bundles/org.openhab.binding.smilescloud/
 ├── pom.xml
 ├── README.md
@@ -696,68 +697,68 @@ bundles/org.openhab.binding.smilescloud/
 #### Auth Hash Computation
 
 1. Argon2id with known salt → verify hex output matches cross-language reference
-2. Argon2id with empty password → verify no crash, produces valid hash
-3. Argon2id with long password (>1000 chars) → verify no crash
-4. Salt decoding: valid hex → correct bytes
-5. Salt decoding: odd-length hex → graceful error
-6. Salt decoding: non-hex characters → graceful error
-7. Unsalted sha256_v3: `md5(pw).hex() + "." + base64(sha256(pw))` → verify format
-8. Unsalted sha256_hex_v3: `sha256(pw).hex()` → verify format
+1. Argon2id with empty password → verify no crash, produces valid hash
+1. Argon2id with long password (>1000 chars) → verify no crash
+1. Salt decoding: valid hex → correct bytes
+1. Salt decoding: odd-length hex → graceful error
+1. Salt decoding: non-hex characters → graceful error
+1. Unsalted sha256_v3: `md5(pw).hex() + "." + base64(sha256(pw))` → verify format
+1. Unsalted sha256_hex_v3: `sha256(pw).hex()` → verify format
 
 #### API Response Parsing
 
-9. Parse station list → extract id/name map, handle `sid` vs `id`
-10. Parse real-time data → extract all numeric channel values as correct types
-11. Parse PV indicators → discover channel count, extract V/I/P values
-12. Parse PV indicators with 0 channels → empty list, no crash
-13. Parse error response (status != "0") → exception with message
-14. Parse null/empty/"-" numeric fields → null, not crash
-15. Parse `data_time` → correct `ZonedDateTime` in station timezone
-16. Parse `data_time` with null → null
-17. Parse reflux_station_data absent → battery fields are null
-18. Parse reflux_station_data present → all battery fields extracted
-19. Parse region_c response → extract login_url and dc
-20. Parse HTML error page → graceful error (not JSON)
-21. Parse truncated JSON → graceful error
-22. Parse empty body → graceful error
+1. Parse station list → extract id/name map, handle `sid` vs `id`
+1. Parse real-time data → extract all numeric channel values as correct types
+1. Parse PV indicators → discover channel count, extract V/I/P values
+1. Parse PV indicators with 0 channels → empty list, no crash
+1. Parse error response (status != "0") → exception with message
+1. Parse null/empty/"-" numeric fields → null, not crash
+1. Parse `data_time` → correct `ZonedDateTime` in station timezone
+1. Parse `data_time` with null → null
+1. Parse reflux_station_data absent → battery fields are null
+1. Parse reflux_station_data present → all battery fields extracted
+1. Parse region_c response → extract login_url and dc
+1. Parse HTML error page → graceful error (not JSON)
+1. Parse truncated JSON → graceful error
+1. Parse empty body → graceful error
 
 #### Auth Flow Orchestration (mocked HTTP)
 
-23. Pre-insp returns salt → Argon2 path → login success
-24. Pre-insp returns a=null → unsalted sha256_v3 succeeds
-25. Pre-insp returns a=null → sha256_v3 fails → sha256_hex_v3 succeeds (fresh nonce)
-26. All v3 variants fail → proper error reporting (no v0 fallback)
-27. Pre-insp returns f=1 (password expired) → CONFIGURATION_ERROR
-28. Login returns "version is low" → classified as app_update_required
-29. Token expiry → re-auth triggered → success
-30. Concurrent token refresh → only one auth call made (ReentrantLock)
-31. Re-auth uses last-successful method first
-32. Region discovery returns regional host → auth uses that host
-33. Region discovery fails → auth proceeds with default host
+1. Pre-insp returns salt → Argon2 path → login success
+1. Pre-insp returns a=null → unsalted sha256_v3 succeeds
+1. Pre-insp returns a=null → sha256_v3 fails → sha256_hex_v3 succeeds (fresh nonce)
+1. All v3 variants fail → proper error reporting (no v0 fallback)
+1. Pre-insp returns f=1 (password expired) → CONFIGURATION_ERROR
+1. Login returns "version is low" → classified as app_update_required
+1. Token expiry → re-auth triggered → success
+1. Concurrent token refresh → only one auth call made (ReentrantLock)
+1. Re-auth uses last-successful method first
+1. Region discovery returns regional host → auth uses that host
+1. Region discovery fails → auth proceeds with default host
 
 #### Station Handler
 
-34. Channel state updates from parsed real-time data
-35. Dynamic PV channel creation on first data fetch
-36. Dynamic PV channel creation with 0 PV strings → no channels added
-37. Null/missing data → UNDEF state
-38. Zero values → QuantityType(0, unit), not UNDEF
-39. Power limit command → correct API payload built, clamped 5–100
-40. Power limit command with value < 5 → clamped to 5
-41. Power limit command with value > 100 → clamped to 100
-42. Bridge goes OFFLINE → station goes OFFLINE with BRIDGE_OFFLINE
+1. Channel state updates from parsed real-time data
+1. Dynamic PV channel creation on first data fetch
+1. Dynamic PV channel creation with 0 PV strings → no channels added
+1. Null/missing data → UNDEF state
+1. Zero values → QuantityType(0, unit), not UNDEF
+1. Power limit command → correct API payload built, clamped 5–100
+1. Power limit command with value < 5 → clamped to 5
+1. Power limit command with value > 100 → clamped to 100
+1. Bridge goes OFFLINE → station goes OFFLINE with BRIDGE_OFFLINE
 
 ### Integration Tests (mocked HTTP server)
 
-43. Full poll cycle: mock returns station list + real-time + PV indicators → bridge ONLINE,
+1. Full poll cycle: mock returns station list + real-time + PV indicators → bridge ONLINE,
     station discovered, all channels populated with correct values
-44. Token expiry mid-cycle: first data call returns auth error → re-auth → retry → success
-45. Network timeout: mock delays > 30s → station OFFLINE + COMMUNICATION_ERROR → next poll
+1. Token expiry mid-cycle: first data call returns auth error → re-auth → retry → success
+1. Network timeout: mock delays > 30s → station OFFLINE + COMMUNICATION_ERROR → next poll
     succeeds → station ONLINE
-46. Station removed from API: mock returns empty station list → station OFFLINE +
+1. Station removed from API: mock returns empty station list → station OFFLINE +
     CONFIGURATION_ERROR
-47. Malformed response: mock returns invalid JSON → graceful error, station OFFLINE
-48. PV string change: first poll has 2 strings, second poll has 3 → new channel added
+1. Malformed response: mock returns invalid JSON → graceful error, station OFFLINE
+1. PV string change: first poll has 2 strings, second poll has 3 → new channel added
 
 ## Phases
 

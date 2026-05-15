@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="smilescloud"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<!-- Power channels -->
+	<channel-type id="pvPower">
+		<item-type>Number:Power</item-type>
+		<label>PV Power</label>
+		<description>Current solar PV power output.</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="gridPower">
+		<item-type>Number:Power</item-type>
+		<label>Grid Power</label>
+		<description>Current grid power (positive = import, negative = export).</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="loadPower">
+		<item-type>Number:Power</item-type>
+		<label>Load Power</label>
+		<description>Current load power consumption.</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="batteryPower">
+		<item-type>Number:Power</item-type>
+		<label>Battery Power</label>
+		<description>Current battery power (positive = charging, negative = discharging).</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<!-- Energy channels -->
+	<channel-type id="todayEnergy">
+		<item-type>Number:Energy</item-type>
+		<label>Today's Energy</label>
+		<description>Total energy produced today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="monthEnergy">
+		<item-type>Number:Energy</item-type>
+		<label>Month Energy</label>
+		<description>Total energy produced this month.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="yearEnergy">
+		<item-type>Number:Energy</item-type>
+		<label>Year Energy</label>
+		<description>Total energy produced this year.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="totalEnergy">
+		<item-type>Number:Energy</item-type>
+		<label>Total Energy</label>
+		<description>Total energy produced over the station lifetime.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="gridImportToday">
+		<item-type>Number:Energy</item-type>
+		<label>Grid Import Today</label>
+		<description>Energy imported from the grid today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="gridExportToday">
+		<item-type>Number:Energy</item-type>
+		<label>Grid Export Today</label>
+		<description>Energy exported to the grid today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="batteryChargeToday">
+		<item-type>Number:Energy</item-type>
+		<label>Battery Charge Today</label>
+		<description>Energy charged into the battery today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="batteryDischargeToday">
+		<item-type>Number:Energy</item-type>
+		<label>Battery Discharge Today</label>
+		<description>Energy discharged from the battery today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="consumptionToday">
+		<item-type>Number:Energy</item-type>
+		<label>Consumption Today</label>
+		<description>Total energy consumed today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="pvToLoadToday">
+		<item-type>Number:Energy</item-type>
+		<label>PV to Load Today</label>
+		<description>Energy consumed directly from PV today.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="gridImportTotal">
+		<item-type>Number:Energy</item-type>
+		<label>Grid Import Total</label>
+		<description>Total energy imported from the grid.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="gridExportTotal">
+		<item-type>Number:Energy</item-type>
+		<label>Grid Export Total</label>
+		<description>Total energy exported to the grid.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<!-- Other channels -->
+	<channel-type id="co2Reduction">
+		<item-type>Number:Mass</item-type>
+		<label>CO2 Reduction</label>
+		<description>Total CO2 emissions reduction from solar production.</description>
+		<state readOnly="true" pattern="%.0f %unit%"/>
+	</channel-type>
+
+	<channel-type id="batterySoc">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Battery State of Charge</label>
+		<description>Battery state of charge percentage.</description>
+		<state readOnly="true" pattern="%.0f %%"/>
+	</channel-type>
+
+	<channel-type id="lastUpdate">
+		<item-type>DateTime</item-type>
+		<label>Last Data Update</label>
+		<description>Timestamp of the last data update from the station.</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="powerLimit">
+		<item-type>Number:Dimensionless</item-type>
+		<label>Power Limit</label>
+		<description>Station power limit percentage (5-100%).</description>
+		<state min="5" max="100" step="1" pattern="%.0f %%"/>
+	</channel-type>
+
+	<!-- Dynamic PV string channel types (instances created at runtime) -->
+	<channel-type id="pvVoltage">
+		<item-type>Number:ElectricPotential</item-type>
+		<label>PV Voltage</label>
+		<description>PV string voltage.</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="pvCurrent">
+		<item-type>Number:ElectricCurrent</item-type>
+		<label>PV Current</label>
+		<description>PV string current.</description>
+		<state readOnly="true" pattern="%.2f %unit%"/>
+	</channel-type>
+
+	<channel-type id="pvStringPower">
+		<item-type>Number:Power</item-type>
+		<label>PV String Power</label>
+		<description>PV string power output.</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+	<channel-type id="pvTotalPower">
+		<item-type>Number:Power</item-type>
+		<label>PV Total Power</label>
+		<description>Total power from all PV strings combined.</description>
+		<state readOnly="true" pattern="%.1f %unit%"/>
+	</channel-type>
+
+</thing:thing-descriptions>
