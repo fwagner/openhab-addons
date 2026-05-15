@@ -169,22 +169,3 @@ After building, the directory target inside org.openhab.binding.bindingname cont
 | Full build | `mvn clean install` |
 | Build with resolver | `mvn clean install -DwithResolver` |
 | Build a specific binding | `mvn clean install -pl org.openhab.binding.bindingname` |
-
-## Cursor Cloud specific instructions
-
-### Environment
-
-- **Java 21** and **Maven 3.9.15** (via `./mvnw` wrapper) are the only requirements. No Docker, databases, or external services needed.
-- There is no globally installed `mvn`; always use `./mvnw` from the repo root.
-- The skeleton creation script (`bundles/create_openhab_binding_skeleton.sh`) references bare `mvn`; invoke with `../mvnw` instead or run the archetype command directly with `./mvnw`.
-
-### Building
-
-- **Full repo build takes ~70 minutes.** Always scope builds to a single binding: `./mvnw clean verify -pl :org.openhab.binding.<name> -am -B`
-- First build downloads ~1-2 GB of Maven artifacts to `~/.m2/repository`. Subsequent builds are fast (~50s for a single binding).
-- The `verify` phase includes Spotless check, Checkstyle, PMD, SpotBugs, Karaf feature verification, and unit tests — no separate lint or test commands are needed.
-- `ohc.version=5.2.0-SNAPSHOT` dependencies resolve from `openhab.jfrog.io`. If that repo is temporarily down, builds will fail on dependency resolution.
-
-### Post-archetype fixups
-
-After running `create_openhab_binding_skeleton.sh`, the archetype modifies `bundles/pom.xml` in a way that fails Spotless. Run `./mvnw spotless:apply -pl :org.openhab.addons.reactor.bundles` to fix it before building. Also, the generated `README.md` may contain bare fenced code blocks (no language tag) which fail markdownlint — add a language specifier (e.g., `text`).
