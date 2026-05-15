@@ -31,6 +31,8 @@ import org.openhab.binding.smilescloud.internal.config.SmilesCloudAccountConfig;
 import org.openhab.binding.smilescloud.internal.discovery.SmilesCloudStationDiscoveryService;
 import org.openhab.binding.smilescloud.internal.exception.SmilesCloudApiException;
 import org.openhab.binding.smilescloud.internal.exception.SmilesCloudAuthenticationException;
+import org.openhab.core.config.discovery.DiscoveryResult;
+import org.openhab.core.config.discovery.DiscoveryResultBuilder;
 import org.openhab.core.io.net.http.HttpClientFactory;
 import org.openhab.core.storage.Storage;
 import org.openhab.core.storage.StorageService;
@@ -39,6 +41,7 @@ import org.openhab.core.thing.ChannelUID;
 import org.openhab.core.thing.Thing;
 import org.openhab.core.thing.ThingStatus;
 import org.openhab.core.thing.ThingStatusDetail;
+import org.openhab.core.thing.ThingUID;
 import org.openhab.core.thing.binding.BaseBridgeHandler;
 import org.openhab.core.thing.binding.ThingHandlerService;
 import org.openhab.core.types.Command;
@@ -202,6 +205,7 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
             logger.debug("Station list returned {} station(s): {}", stations.size(), stations);
             discoveredStations.clear();
             discoveredStations.putAll(stations);
+            notifyDiscovery(stations);
 
             if (stations.isEmpty()) {
                 updateStatus(ThingStatus.ONLINE);
@@ -248,6 +252,37 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
                     }
                 }
             }
+        }
+    }
+
+    // --- Auto-discovery ---
+
+    private @Nullable SmilesCloudStationDiscoveryService discoveryService;
+
+    public void setDiscoveryService(@Nullable SmilesCloudStationDiscoveryService service) {
+        this.discoveryService = service;
+    }
+
+    private void notifyDiscovery(Map<String, String> stations) {
+        SmilesCloudStationDiscoveryService svc = discoveryService;
+        if (svc == null) {
+            logger.debug("Discovery service not registered, skipping auto-discovery");
+            return;
+        }
+        ThingUID bridgeUID = getThing().getUID();
+        for (Map.Entry<String, String> entry : stations.entrySet()) {
+            String stationId = entry.getKey();
+            boolean alreadyAdopted = getThing().getThings().stream()
+                    .anyMatch(t -> stationId.equals(t.getConfiguration().get("stationId")));
+            if (alreadyAdopted) {
+                continue;
+            }
+            ThingUID thingUID = new ThingUID(THING_TYPE_STATION, bridgeUID, stationId);
+            DiscoveryResult result = DiscoveryResultBuilder.create(thingUID).withBridge(bridgeUID)
+                    .withLabel(entry.getValue()).withProperty("stationId", stationId)
+                    .withRepresentationProperty("stationId").build();
+            logger.debug("Auto-discovered station {} ({})", stationId, entry.getValue());
+            svc.publishDiscoveryResult(result);
         }
     }
 

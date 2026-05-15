@@ -15,10 +15,12 @@ package org.openhab.binding.smilescloud.internal.discovery;
 import static org.openhab.binding.smilescloud.internal.SmilesCloudBindingConstants.*;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.openhab.binding.smilescloud.internal.handler.SmilesCloudAccountHandler;
 import org.openhab.core.config.discovery.AbstractThingHandlerDiscoveryService;
+import org.openhab.core.config.discovery.DiscoveryResult;
 import org.openhab.core.config.discovery.DiscoveryResultBuilder;
 import org.openhab.core.thing.ThingUID;
 import org.osgi.service.component.annotations.Component;
@@ -41,7 +43,19 @@ public class SmilesCloudStationDiscoveryService
     private final Logger logger = LoggerFactory.getLogger(SmilesCloudStationDiscoveryService.class);
 
     public SmilesCloudStationDiscoveryService() {
-        super(SmilesCloudAccountHandler.class, SUPPORTED_THING_TYPES_UIDS, DISCOVERY_TIMEOUT_SECONDS, true);
+        super(SmilesCloudAccountHandler.class, Set.of(THING_TYPE_STATION), DISCOVERY_TIMEOUT_SECONDS, true);
+    }
+
+    @Override
+    public void initialize() {
+        thingHandler.setDiscoveryService(this);
+        super.initialize();
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        thingHandler.setDiscoveryService(null);
     }
 
     @Override
@@ -58,5 +72,12 @@ public class SmilesCloudStationDiscoveryService
             thingDiscovered(DiscoveryResultBuilder.create(thingUID).withBridge(bridgeUID).withLabel(entry.getValue())
                     .withProperty("stationId", entry.getKey()).withRepresentationProperty("stationId").build());
         }
+    }
+
+    /**
+     * Called by the bridge handler to publish auto-discovered stations to the inbox.
+     */
+    public void publishDiscoveryResult(DiscoveryResult result) {
+        thingDiscovered(result);
     }
 }
