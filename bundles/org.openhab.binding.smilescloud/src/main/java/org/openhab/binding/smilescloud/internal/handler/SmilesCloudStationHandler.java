@@ -22,6 +22,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jdt.annotation.NonNullByDefault;
 import org.eclipse.jdt.annotation.Nullable;
@@ -61,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public class SmilesCloudStationHandler extends BaseThingHandler {
 
     private static final DateTimeFormatter DATA_TIME_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final Pattern PV_VOLTAGE_CHANNEL_ID = Pattern.compile("^pv(\\d+)Voltage$");
 
     private final Logger logger = LoggerFactory.getLogger(SmilesCloudStationHandler.class);
     private final Set<Integer> createdPvChannels = new HashSet<>();
@@ -94,6 +97,7 @@ public class SmilesCloudStationHandler extends BaseThingHandler {
             return;
         }
 
+        syncCreatedPvChannelsFromThing();
         updateStatus(ThingStatus.UNKNOWN);
     }
 
@@ -167,10 +171,12 @@ public class SmilesCloudStationHandler extends BaseThingHandler {
         List<Channel> channels = new ArrayList<>(getThing().getChannels());
 
         for (int ch : pvChannelNumbers) {
-            if (createdPvChannels.contains(ch)) {
+            String voltageChannelId = "pv" + ch + "Voltage";
+            if (createdPvChannels.contains(ch) || getThing().getChannel(voltageChannelId) != null) {
+                createdPvChannels.add(ch);
                 continue;
             }
-            channels.add(buildDynamicChannel("pv" + ch + "Voltage", "Number:ElectricPotential", "pvVoltage",
+            channels.add(buildDynamicChannel(voltageChannelId, "Number:ElectricPotential", "pvVoltage",
                     "PV" + ch + " Voltage"));
             channels.add(buildDynamicChannel("pv" + ch + "Current", "Number:ElectricCurrent", "pvCurrent",
                     "PV" + ch + " Current"));
@@ -186,6 +192,15 @@ public class SmilesCloudStationHandler extends BaseThingHandler {
                         buildDynamicChannel(CHANNEL_PV_TOTAL_POWER, "Number:Power", "pvTotalPower", "PV Total Power"));
             }
             updateThing(editThing().withChannels(channels).build());
+        }
+    }
+
+    private void syncCreatedPvChannelsFromThing() {
+        for (Channel channel : getThing().getChannels()) {
+            Matcher matcher = PV_VOLTAGE_CHANNEL_ID.matcher(channel.getUID().getIdWithoutGroup());
+            if (matcher.matches()) {
+                createdPvChannels.add(Integer.parseInt(matcher.group(1)));
+            }
         }
     }
 

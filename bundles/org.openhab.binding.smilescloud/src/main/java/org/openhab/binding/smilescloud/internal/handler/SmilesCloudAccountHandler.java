@@ -250,11 +250,16 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
                 if (child.getHandler() instanceof SmilesCloudStationHandler stationHandler) {
                     String childStationId = (String) child.getConfiguration().get("stationId");
                     if (stationId.equals(childStationId)) {
-                        if (realtime != null) {
-                            stationHandler.updateData(realtime);
-                        }
-                        if (pvIndicators != null) {
-                            stationHandler.updatePvIndicators(pvIndicators);
+                        try {
+                            if (realtime != null) {
+                                stationHandler.updateData(realtime);
+                            }
+                            if (pvIndicators != null) {
+                                stationHandler.updatePvIndicators(pvIndicators);
+                            }
+                        } catch (RuntimeException e) {
+                            logger.warn("Unexpected error updating station {}: {}", stationId, e.getMessage(), e);
+                            stationHandler.setOffline(e.getMessage());
                         }
                     }
                 }
