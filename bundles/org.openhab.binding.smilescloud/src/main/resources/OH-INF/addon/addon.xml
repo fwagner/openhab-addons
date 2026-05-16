@@ -4,7 +4,8 @@
 	xsi:schemaLocation="https://openhab.org/schemas/addon/v1.0.0 https://openhab.org/schemas/addon-1.0.0.xsd">
 
 	<type>binding</type>
-	<name>SmilesCloud Binding</name>
-	<description>This is the binding for SmilesCloud.</description>
+	<name>S-Miles Cloud Binding</name>
+	<description>Connects to the Hoymiles S-Miles Cloud for solar inverter monitoring and control.</description>
+	<connection>cloud</connection>
 
 </addon:addon>

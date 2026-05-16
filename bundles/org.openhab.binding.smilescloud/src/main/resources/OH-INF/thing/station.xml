@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<thing:thing-descriptions bindingId="smilescloud"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
+
+	<thing-type id="station">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="account"/>
+		</supported-bridge-type-refs>
+
+		<label>S-Miles Cloud Station</label>
+		<description>A solar station monitored via the Hoymiles S-Miles Cloud.</description>
+
+		<channels>
+			<channel id="pvPower" typeId="pvPower"/>
+			<channel id="todayEnergy" typeId="todayEnergy"/>
+			<channel id="monthEnergy" typeId="monthEnergy"/>
+			<channel id="yearEnergy" typeId="yearEnergy"/>
+			<channel id="totalEnergy" typeId="totalEnergy"/>
+			<channel id="co2Reduction" typeId="co2Reduction"/>
+			<channel id="gridPower" typeId="gridPower"/>
+			<channel id="loadPower" typeId="loadPower"/>
+			<channel id="batteryPower" typeId="batteryPower"/>
+			<channel id="batterySoc" typeId="batterySoc"/>
+			<channel id="gridImportToday" typeId="gridImportToday"/>
+			<channel id="gridExportToday" typeId="gridExportToday"/>
+			<channel id="batteryChargeToday" typeId="batteryChargeToday"/>
+			<channel id="batteryDischargeToday" typeId="batteryDischargeToday"/>
+			<channel id="consumptionToday" typeId="consumptionToday"/>
+			<channel id="pvToLoadToday" typeId="pvToLoadToday"/>
+			<channel id="gridImportTotal" typeId="gridImportTotal"/>
+			<channel id="gridExportTotal" typeId="gridExportTotal"/>
+			<channel id="lastUpdate" typeId="lastUpdate"/>
+			<channel id="powerLimit" typeId="powerLimit"/>
+		</channels>
+
+		<representation-property>stationId</representation-property>
+
+		<config-description>
+			<parameter name="stationId" type="text" required="true">
+				<label>Station ID</label>
+				<description>The station ID from the S-Miles Cloud.</description>
+			</parameter>
+		</config-description>
+	</thing-type>
+
+</thing:thing-descriptions>
