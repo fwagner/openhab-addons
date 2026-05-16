@@ -92,6 +92,21 @@ class SmilesCloudStationHandlerTest extends JavaTest {
     }
 
     @Test
+    void updatePvIndicatorsAddsPvTotalPowerWhenStringChannelsAlreadyExist() {
+        Thing thing = stationThingBuilder()
+                .withChannel(pvChannel(1, "Voltage", "pvVoltage", "Number:ElectricPotential"))
+                .withChannel(pvChannel(1, "Current", "pvCurrent", "Number:ElectricCurrent"))
+                .withChannel(pvChannel(1, "Power", "pvStringPower", "Number:Power")).build();
+        SmilesCloudStationHandler handler = createHandler(thing);
+
+        handler.updatePvIndicators(samplePvIndicators());
+
+        ArgumentCaptor<Thing> thingCaptor = ArgumentCaptor.forClass(Thing.class);
+        verify(callback).thingUpdated(thingCaptor.capture());
+        assertTrue(channelIds(thingCaptor.getValue()).contains(CHANNEL_PV_TOTAL_POWER));
+    }
+
+    @Test
     void updatePvIndicatorsAfterHandlerRestartDoesNotDuplicateChannels() {
         Thing thing = stationThingBuilder().build();
 

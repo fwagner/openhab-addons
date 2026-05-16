@@ -330,6 +330,10 @@ public class SmilesCloudAccountHandler extends BaseBridgeHandler {
         if (token != null) {
             s.put("authToken", token);
         }
+        String authMethod = auth.getLastSuccessfulMethod();
+        if (authMethod != null) {
+            s.put("authMethod", authMethod);
+        }
         String profile = auth.getProfile();
         if (profile != null) {
             s.put("profile", profile);

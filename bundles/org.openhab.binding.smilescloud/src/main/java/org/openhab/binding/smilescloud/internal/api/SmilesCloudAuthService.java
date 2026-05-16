@@ -88,6 +88,10 @@ public class SmilesCloudAuthService {
         return dataCenterMarker;
     }
 
+    public @Nullable String getLastSuccessfulMethod() {
+        return lastSuccessfulMethod;
+    }
+
     /**
      * Restore previously persisted auth state (from StorageService).
      */
@@ -442,7 +446,7 @@ public class SmilesCloudAuthService {
         ContentResponse response = request.send();
         String responseBody = response.getContentAsString();
         logger.debug("POST {} → HTTP {} (UA: {})", url, response.getStatus(), userAgent);
-        logger.trace("Response body: {}", responseBody);
+        logger.trace("Response body: {}", SmilesCloudLogSanitizer.sanitizeJsonForLog(responseBody));
         return responseBody;
     }
 }

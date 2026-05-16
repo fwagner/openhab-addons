@@ -186,11 +186,12 @@ public class SmilesCloudStationHandler extends BaseThingHandler {
             changed = true;
         }
 
+        if (getThing().getChannel(CHANNEL_PV_TOTAL_POWER) == null) {
+            channels.add(buildDynamicChannel(CHANNEL_PV_TOTAL_POWER, "Number:Power", "pvTotalPower", "PV Total Power"));
+            changed = true;
+        }
+
         if (changed) {
-            if (getThing().getChannel(CHANNEL_PV_TOTAL_POWER) == null) {
-                channels.add(
-                        buildDynamicChannel(CHANNEL_PV_TOTAL_POWER, "Number:Power", "pvTotalPower", "PV Total Power"));
-            }
             updateThing(editThing().withChannels(channels).build());
         }
     }

@@ -250,7 +250,7 @@ public class SmilesCloudApiClient {
         try {
             logger.debug("API POST {}", url);
             String response = postJson(url, body, token);
-            logger.trace("API response: {}", response);
+            logger.trace("API response: {}", SmilesCloudLogSanitizer.sanitizeJsonForLog(response));
             return response;
         } catch (Exception e) {
             logger.debug("API POST {} failed: {}", url, e.getMessage());
